@@ -1,3 +1,12 @@
+/* Becca Kheiry
+ * ECE387
+ * Alarm Clock assignment
+ * This alarm clock code allows you to set the current time and alarm
+ * time, then will keep time until the current time matches the alarm time.
+ * The match will set off a piezo speaker (if connected) and one of the 
+ * Arduino Uno's built-in LEDs as the alarm. 
+ */
+
 #include <stdio.h>
 
 unsigned long startTime;
@@ -12,16 +21,23 @@ const int buzzer = 8;
 
 int getInt() {
   if (Serial.available() > 0) {
-    int x = Serial.parseInt();
+    int x = Serial.parseInt();  // get int value for times
     return x;
   }
-  else getInt();
+  else getInt();                // loop until input is detected
 }
 
-void alarm() {
+char* formatTime(int y) {       // format time so there's a leading 0
+  static char z[4];               // for numbers <10
+  sprintf(z, "%02d", y);
+  return z;
+}
+
+void alarm() {                  // loop alarm forever once triggered
   while (1) {
     digitalWrite(ledPin, HIGH);
     tone(8, 4000, 2000);
+    delay(2000);
     digitalWrite(ledPin, LOW);
     delay(2000);
   }
@@ -31,6 +47,7 @@ void setup() {
   Serial.begin(9600);
   pinMode(ledPin, OUTPUT);
   pinMode(buzzer, OUTPUT);
+  
   // have user set clock
   Serial.println("Please set the current hour (military time)");
   startHour = getInt();
@@ -43,23 +60,28 @@ void setup() {
   Serial.println("Please set the alarm minute");
   alarmMin = getInt();
 
+  // start counting
+  startTime = millis();
+
   //Display selections
   Serial.print("Current time: ");
-  Serial.print(startHour);
+  Serial.print(formatTime(startHour));
   Serial.print(":");
-  Serial.println(startMin);
+  Serial.println(formatTime(startMin));
   Serial.print("Alarm time: ");
-  Serial.print(alarmHour);
+  Serial.print(formatTime(alarmHour));
   Serial.print(":");
-  Serial.println(alarmMin);
-  startTime = millis();
+  Serial.println(formatTime(alarmMin));
 }
 
 void loop() {
-  currentTime = millis();
+  currentTime = millis(); // check time each loop
+
+  // increment time each minute
   if ((currentTime - startTime) >= oneMin)
   {
     startMin++;
+    // check for alarm match
     if ((startMin == alarmMin) && (startHour == alarmHour)) {
       alarm();
     }
@@ -70,13 +92,14 @@ void loop() {
     if ((startMin == alarmMin) && (startHour == alarmHour)) {
       alarm();
     }
-    else if (startHour == 25) {
+    // reset at midnight
+    else if (startHour == 24) {
       startHour = 0;
     }
-    Serial.print(startHour);
+    // print time every minute (or comment out if desired)
+    Serial.print(formatTime(startHour));
     Serial.print(":");
-    Serial.println(startMin);
+    Serial.println(formatTime(startMin));
     startTime = currentTime;
   }
 }
-
