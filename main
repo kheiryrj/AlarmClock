@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 unsigned long startTime;
 unsigned long currentTime;
 int startHour;
@@ -6,26 +8,50 @@ int alarmHour;
 int alarmMin;
 const unsigned long oneMin = 60000; // we don't care about seconds here
 const byte ledPin = 13;
+const int buzzer = 8;
+
+int getInt() {
+  if (Serial.available() > 0) {
+    int x = Serial.parseInt();
+    return x;
+  }
+  else getInt();
+}
+
+void alarm() {
+  while (1) {
+    digitalWrite(ledPin, HIGH);
+    tone(8, 4000, 2000);
+    digitalWrite(ledPin, LOW);
+    delay(2000);
+  }
+}
 
 void setup() {
   Serial.begin(9600);
   pinMode(ledPin, OUTPUT);
-  Serial.println("Please set the hour (military time)");
+  pinMode(buzzer, OUTPUT);
   // have user set clock
-  while(!Serial.available()){
-    if (Serial.available() > 0) {
-      startHour = Serial.parseInt();
-      Serial.println("Please set the minute");
-      while(!Serial.available()){
-        if (Serial.available() > 0) {
-          startMin = Serial.parseInt();
-          Serial.print(startHour);
-          Serial.print(":");
-          Serial.println(startMin);
-        }
-      }
-    }
-  }
+  Serial.println("Please set the current hour (military time)");
+  startHour = getInt();
+  Serial.println("Please set the current minute");
+  startMin = getInt();
+
+  //Have user set alarm
+  Serial.println("Please set the alarm hour (military time)");
+  alarmHour = getInt();
+  Serial.println("Please set the alarm minute");
+  alarmMin = getInt();
+
+  //Display selections
+  Serial.print("Current time: ");
+  Serial.print(startHour);
+  Serial.print(":");
+  Serial.println(startMin);
+  Serial.print("Alarm time: ");
+  Serial.print(alarmHour);
+  Serial.print(":");
+  Serial.println(alarmMin);
   startTime = millis();
 }
 
@@ -34,11 +60,17 @@ void loop() {
   if ((currentTime - startTime) >= oneMin)
   {
     startMin++;
-    if (startMin == 60) {
+    if ((startMin == alarmMin) && (startHour == alarmHour)) {
+      alarm();
+    }
+    else if (startMin == 60) {
       startMin = 0;
       startHour++;
     }
-    if (startHour == 25) {
+    if ((startMin == alarmMin) && (startHour == alarmHour)) {
+      alarm();
+    }
+    else if (startHour == 25) {
       startHour = 0;
     }
     Serial.print(startHour);
@@ -47,3 +79,4 @@ void loop() {
     startTime = currentTime;
   }
 }
+
